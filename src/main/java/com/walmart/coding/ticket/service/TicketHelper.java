@@ -25,7 +25,7 @@ public class TicketHelper {
 	List<Seat> reservedSeats = new ArrayList<Seat>();
 
 	public void loadLimits() {
-		InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("\\resources\\limits.properties");
+		InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("limits.properties");
 		Properties properties = new Properties();
 		try {
 			properties.load(inputStream);
