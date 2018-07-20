@@ -9,31 +9,35 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-import com.walmart.coding.ticket.model.RowNumber;
 import com.walmart.coding.ticket.model.Seat;
 import com.walmart.coding.ticket.model.SeatHold;
 
 public class TicketHelper {
-	Map<RowNumber, List<Seat>> allSeats = new HashMap<RowNumber, List<Seat>>();
+	private static final String LIMITS_PROPERTIES = "limits.properties";
+	private static final String ROWS_LIMIT = "rows.limit";
+	private static final String SEATS_PER_ROW_LIMIT = "seats.per.row.limit";
+	private static final String HOLD_TICKET_EXPIRY_TIME_IN_SECONDS = "hold.ticket.expiry.time.in.seconds";
+	
 	int rowsLimit = 5;
 	int seatsPerRowLimit = 10;
 	int loadSeatCounter = 1;
 	int expiryDurationInSeconds = 0;
-	List<Seat> heldSeats = new ArrayList<Seat>();
 
+	private Map<Integer, List<Seat>> allSeats = new HashMap<Integer, List<Seat>>();
 	private Map<Integer, SeatHold> heldSeatMap = new HashMap<Integer, SeatHold>();
-	List<Seat> reservedSeats = new ArrayList<Seat>();
+	private List<Seat> reservedSeats = new ArrayList<Seat>();
+	private List<Integer> rowNumbers = new ArrayList<Integer>();
 
 	public void loadLimits() {
-		InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("limits.properties");
+		InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(LIMITS_PROPERTIES);
 		Properties properties = new Properties();
 		try {
 			properties.load(inputStream);
-			rowsLimit = Integer.valueOf(properties.getProperty("rows.limit"));
-			seatsPerRowLimit = Integer.valueOf(properties.getProperty("seats.per.row.limit"));
-			expiryDurationInSeconds = Integer.valueOf(properties.getProperty("hold.ticket.expiry.time.in.seconds"));
+			rowsLimit = Integer.valueOf(properties.getProperty(ROWS_LIMIT));
+			seatsPerRowLimit = Integer.valueOf(properties.getProperty(SEATS_PER_ROW_LIMIT));
+			expiryDurationInSeconds = Integer.valueOf(properties.getProperty(HOLD_TICKET_EXPIRY_TIME_IN_SECONDS));
 		} catch (IOException e) {
-
+			// Do nothing, default rowNumber and seatsPerRowLimit would be retained.
 		}
 	}
 
@@ -42,29 +46,37 @@ public class TicketHelper {
 			addSeatPerEachRow(rowNum);
 		}
 	}
+	
+	protected void loadRowNumbers() {
+		for (int rowNum = 1; rowNum <= rowsLimit; rowNum++) {
+			rowNumbers.add(rowNum);
+		}
+	}
 
+	
 	private void addSeatPerEachRow(int rowNum) {
 		for (int seatPerRow = 1; seatPerRow <= seatsPerRowLimit; seatPerRow++) {
-			RowNumber rowNumber = RowNumber.fromNumber(rowNum);
-			List<Seat> list = allSeats.get(rowNumber);
+			List<Seat> list = allSeats.get(rowNum);
 			Seat seat = new Seat();
-			seat.setRowNumber(rowNumber);
+			seat.setRowNum(rowNum);
 			seat.setSeatNumber(loadSeatCounter++);
 			if (list == null) {
 				list = new ArrayList<Seat>();
 			}
 			list.add(seat);
-			allSeats.put(rowNumber, list);
+			allSeats.put(rowNum, list);
 		}
 	}
 
-	public Map<RowNumber, List<Seat>> getAllSeats() {
+	
+	public Map<Integer, List<Seat>> getAllSeats() {
 		return allSeats;
 	}
 
+	
 	public int getAllSeatsCount() {
 		int allSeatsCount = 0;
-		for (Entry<RowNumber, List<Seat>> entry : getAllSeats().entrySet()) {
+		for (Entry<Integer, List<Seat>> entry : getAllSeats().entrySet()) {
 			allSeatsCount += entry.getValue().size();
 		}
 		return allSeatsCount;
@@ -92,6 +104,10 @@ public class TicketHelper {
 
 	public int getExpiryDurationInSeconds() {
 		return expiryDurationInSeconds;
+	}
+
+	public List<Integer> getRowNumbers() {
+		return rowNumbers;
 	}
 
 }

@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
-import com.walmart.coding.ticket.model.RowNumber;
 import com.walmart.coding.ticket.model.Seat;
 import com.walmart.coding.ticket.model.SeatHold;
 
@@ -21,6 +20,7 @@ public class TicketServiceImpl implements TicketService {
 
 	public TicketServiceImpl() {
 		ticketHelper.loadLimits();
+		ticketHelper.loadRowNumbers();
 		ticketHelper.loadSeats();
 	}
 
@@ -40,9 +40,15 @@ public class TicketServiceImpl implements TicketService {
 			return hold;
 		}
 
+		SeatHold seatHold = createSeatHoldForNonContiguousSeats(numSeats, customerEmailId);
+		ticketHelper.getHeldSeatMap().put(seatHold.getSeatHoldId(), seatHold);
+		return seatHold;
+	}
+
+	private SeatHold createSeatHoldForNonContiguousSeats(int numSeats, String customerEmailId) {
 		SeatHold seatHold = constructSeatHold(numSeats, customerEmailId);
 		int counter = 0;
-		for (RowNumber rowNumber : RowNumber.getRowNumOrder()) {
+		for (Integer rowNumber : ticketHelper.getRowNumbers()) {
 			List<Seat> seats = ticketHelper.getAllSeats().get(rowNumber);
 			for (Seat seat : seats) {
 				if (counter == numSeats) {
@@ -56,12 +62,11 @@ public class TicketServiceImpl implements TicketService {
 				counter++;
 			}
 		}
-		ticketHelper.getHeldSeatMap().put(seatHold.getSeatHoldId(), seatHold);
 		return seatHold;
 	}
 
 	public SeatHold getContiguousSeat(int numSeats, String customerEmailId) {
-		RowNumber seatRowNumber = getContiguousAvailableSeatsRowNumber(numSeats);
+		Integer seatRowNumber = getContiguousAvailableSeatsRowNumber(numSeats);
 		if (seatRowNumber == null) {
 			return null;
 		}
@@ -114,36 +119,49 @@ public class TicketServiceImpl implements TicketService {
 	}
 
 	public void validateSeatHold(int seatHoldId, String customerEmailId) {
+		checkIfNoEmailProvided(customerEmailId);
+		checkIfAlreadySeatIdIsReserved(seatHoldId);
+		SeatHold seatHold = ticketHelper.getHeldSeatMap().get(seatHoldId);
+		if (isNotExpiredNew(seatHold)) {
+			return;
+		}
+		clearSeatHoldIdForExpiredSeats(seatHold);
+		clearFromHeldSeatMap(seatHoldId, seatHold);
+		throw new IllegalArgumentException("hold time expired.");
+
+	}
+
+	private void checkIfNoEmailProvided(String customerEmailId) {
 		if (isBlank(customerEmailId)) {
 			throw new IllegalArgumentException("customerEmailId is required.");
 		}
+	}
 
+	private void checkIfAlreadySeatIdIsReserved(int seatHoldId) {
 		for (Seat existingSeat : ticketHelper.getReservedSeats()) {
 			if (existingSeat.getSeatHoldId().equals(seatHoldId)) {
 				throw new IllegalArgumentException("Already SeatId is reserved.");
 			}
 		}
+	}
 
-		SeatHold seatHold = ticketHelper.getHeldSeatMap().get(seatHoldId);
+	private void clearFromHeldSeatMap(int seatHoldId, SeatHold seatHold) {
+		seatHold.setSeatHoldId(null);
+		seatHold.setBookedTime(null);
+		seatHold.setCustomerEmailId(null);
+		seatHold.setSeats(new ArrayList<Seat>());
+		ticketHelper.getHeldSeatMap().remove(seatHoldId);
+	}
 
-		if (isNotExpiredNew(seatHold)) {
-			return;
-		}
-		Map<RowNumber, List<Seat>> allSeats = ticketHelper.getAllSeats();
-		for (Entry<RowNumber, List<Seat>> entry : allSeats.entrySet()) {
+	private void clearSeatHoldIdForExpiredSeats(SeatHold seatHold) {
+		Map<Integer, List<Seat>> allSeats = ticketHelper.getAllSeats();
+		for (Entry<Integer, List<Seat>> entry : allSeats.entrySet()) {
 			for (Seat seat : entry.getValue()) {
 				if (seat.getSeatHoldId() != null && seat.getSeatHoldId().equals(seatHold.getSeatHoldId())) {
 					seat.setSeatHoldId(null);
 				}
 			}
 		}
-		seatHold.setSeatHoldId(null);
-		seatHold.setBookedTime(null);
-		seatHold.setCustomerEmailId(null);
-		seatHold.setSeats(new ArrayList<Seat>());
-		ticketHelper.getHeldSeatMap().remove(seatHoldId);
-		throw new IllegalArgumentException("hold time expired.");
-
 	}
 
 	public boolean isNotExpiredNew(SeatHold seatHold) {
@@ -168,9 +186,9 @@ public class TicketServiceImpl implements TicketService {
 		return new Random().nextInt(1000 - 500) + 500;
 	}
 
-	public RowNumber getContiguousAvailableSeatsRowNumber(int numSeats) {
+	public Integer getContiguousAvailableSeatsRowNumber(int numSeats) {
 		int availableCount = 0;
-		for (RowNumber rowNumber : RowNumber.getRowNumOrder()) {
+		for (Integer rowNumber : ticketHelper.getRowNumbers()) {
 			for (Seat seat : ticketHelper.getAllSeats().get(rowNumber)) {
 				if (seat.getSeatHoldId() == null) {
 					availableCount++;
@@ -179,14 +197,11 @@ public class TicketServiceImpl implements TicketService {
 					return rowNumber;
 				}
 			}
+			// Reset the counter for each row.
 			availableCount = 0;
 		}
 		return null;
 	}
-
-	/*public <T> boolean isListEmpty(Collection<T> list) {
-		return list == null || list.isEmpty();
-	}*/
 
 	public TicketHelper getTicketHelper() {
 		return ticketHelper;

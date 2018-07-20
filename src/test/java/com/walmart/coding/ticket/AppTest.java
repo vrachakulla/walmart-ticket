@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.walmart.coding.ticket.model.RowNumber;
 import com.walmart.coding.ticket.model.Seat;
 import com.walmart.coding.ticket.model.SeatHold;
 import com.walmart.coding.ticket.service.TicketServiceImpl;
@@ -43,9 +42,9 @@ public class AppTest extends TestCase {
 		Assert.assertNotNull(seatHold1);
 		Assert.assertNotNull(seatHold2);
 		Assert.assertNotNull(seatHold3);
-		Assert.assertEquals(RowNumber.FIRST_ROW, seatHold1.getSeats().get(0).getRowNumber());
-		Assert.assertEquals(RowNumber.FIRST_ROW, seatHold2.getSeats().get(0).getRowNumber());
-		Assert.assertEquals(RowNumber.SECOND_ROW, seatHold3.getSeats().get(0).getRowNumber());
+		Assert.assertEquals(1, seatHold1.getSeats().get(0).getRowNum().intValue());
+		Assert.assertEquals(1, seatHold2.getSeats().get(0).getRowNum().intValue());
+		Assert.assertEquals(2, seatHold3.getSeats().get(0).getRowNum().intValue());
 		Assert.assertNotNull(seatHold3);
 		Assert.assertEquals(customerEmailId, seatHold1.getCustomerEmailId());
 	}
@@ -87,10 +86,10 @@ public class AppTest extends TestCase {
 
 	@Test
 	public void testAllSeats() {
-		Map<RowNumber, List<Seat>> allSeats = ticketServiceImpl.getTicketHelper().getAllSeats();
+		Map<Integer, List<Seat>> allSeats = ticketServiceImpl.getTicketHelper().getAllSeats();
 		Assert.assertEquals(5, allSeats.size());
 		int totalSize = 0;
-		for (Entry<RowNumber, List<Seat>> entry : allSeats.entrySet()) {
+		for (Entry<Integer, List<Seat>> entry : allSeats.entrySet()) {
 			totalSize += entry.getValue().size();
 		}
 
@@ -99,13 +98,13 @@ public class AppTest extends TestCase {
 
 	@Test
 	public void testAvailableSeatsInFirstRow() {
-		RowNumber rowNumber = ticketServiceImpl.getContiguousAvailableSeatsRowNumber(10);
-		Assert.assertEquals(RowNumber.FIRST_ROW, rowNumber);
+		Integer rowNumber = ticketServiceImpl.getContiguousAvailableSeatsRowNumber(10);
+		Assert.assertEquals(new Integer(1), rowNumber);
 	}
 
 	@Test
 	public void testMoreThanAvailableSeatsInARow() {
-		RowNumber rowNumber = ticketServiceImpl.getContiguousAvailableSeatsRowNumber(20);
+		Integer rowNumber = ticketServiceImpl.getContiguousAvailableSeatsRowNumber(20);
 		Assert.assertNull(rowNumber);
 	}
 
@@ -125,11 +124,11 @@ public class AppTest extends TestCase {
 		Assert.assertNotNull(seatHold1);
 		Assert.assertNotNull(seatHold2);
 		Assert.assertNotNull(seatHold3);
-		Assert.assertEquals(RowNumber.FIRST_ROW.getRowNumber(), seatHold1.getSeats().get(0).getRowNumber().getRowNumber());
+		Assert.assertEquals(1, seatHold1.getSeats().get(0).getRowNum().intValue());
 
-		Assert.assertEquals(RowNumber.FIRST_ROW, seatHold1.getSeats().get(0).getRowNumber());
-		Assert.assertEquals(RowNumber.FIRST_ROW, seatHold2.getSeats().get(0).getRowNumber());
-		Assert.assertEquals(RowNumber.SECOND_ROW, seatHold3.getSeats().get(0).getRowNumber());
+		Assert.assertEquals(1, seatHold1.getSeats().get(0).getRowNum().intValue());
+		Assert.assertEquals(1, seatHold2.getSeats().get(0).getRowNum().intValue());
+		Assert.assertEquals(2, seatHold3.getSeats().get(0).getRowNum().intValue());
 
 		seatHold2.setBookedTime(Instant.now().minusSeconds(700));
 		String confirmation1 = ticketServiceImpl.reserveSeats(seatHold1.getSeatHoldId(), customerEmailId);
@@ -144,7 +143,7 @@ public class AppTest extends TestCase {
 
 		SeatHold seatHold4 = ticketServiceImpl.findAndHoldSeats(5, customerEmailId);
 		Assert.assertNotNull(seatHold4);
-		Assert.assertEquals(RowNumber.FIRST_ROW, seatHold4.getSeats().get(0).getRowNumber());
+		Assert.assertEquals(1, seatHold4.getSeats().get(0).getRowNum().intValue());
 
 		String confirmation4 = ticketServiceImpl.reserveSeats(seatHold4.getSeatHoldId(), customerEmailId);
 		Assert.assertNotNull(confirmation4);

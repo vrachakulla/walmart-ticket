@@ -2,19 +2,10 @@ package com.walmart.coding.ticket.model;
 
 public class Seat {
 
-	private RowNumber rowNumber;
 	private Integer seatNumber;
-	// private SeatHold seatHold;
 	private Integer seatHoldId;
-
-	public RowNumber getRowNumber() {
-		return rowNumber;
-	}
-
-	public void setRowNumber(RowNumber rowNumber) {
-		this.rowNumber = rowNumber;
-	}
-
+	private Integer rowNum;
+	
 	public Integer getSeatNumber() {
 		return seatNumber;
 	}
@@ -29,6 +20,14 @@ public class Seat {
 
 	public void setSeatHoldId(Integer seatHoldId) {
 		this.seatHoldId = seatHoldId;
+	}
+
+	public Integer getRowNum() {
+		return rowNum;
+	}
+
+	public void setRowNum(Integer rowNum) {
+		this.rowNum = rowNum;
 	}
 
 }
